@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Busca de Cartão - SENAI/SESI</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚌 Sistema de Busca de Cartão</h1>
+            <p class="subtitle">SENAI/SESI - Localize seu cartão perdido</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="cadastro">📝 Cadastrar</button>
+            <button class="tab" data-tab="consulta">🔍 Consultar</button>
+            <button class="tab" data-tab="radar">🗺️ Radar com Mapa</button>
+        </div>
+
+        <!-- TAB 1: CADASTRO -->
+        <div class="tab-content" id="cadastro">
+            <div class="card">
+                <h2>📝 Cadastrar Cartão</h2>
+                <p class="hint">Preencha os dados para cadastrar seu cartão</p>
+                <form id="cadastroForm">
+                    <div class="form-group">
+                        <label>👤 Nome completo <span class="required">*</span></label>
+                        <input type="text" id="nome" placeholder="Digite seu nome completo" required />
+                    </div>
+                    <div class="form-group">
+                        <label>💳 Código do cartão <span class="required">*</span></label>
+                        <input type="text" id="codigoCartao" placeholder="Ex: SENAI-2026-123" required />
+                    </div>
+                    <div class="form-group">
+                        <label>🎓 Matrícula <span class="required">*</span></label>
+                        <input type="text" id="matricula" placeholder="Digite sua matrícula" required />
+                        <span class="hint-text">Use esta matrícula como senha para consultar</span>
+                    </div>
+                    <button type="submit" class="btn-primary">✅ Cadastrar Cartão</button>
+                </form>
+                <div id="cadastroResultado" class="resultado"></div>
+            </div>
+        </div>
+
+        <!-- TAB 2: CONSULTA -->
+        <div class="tab-content hidden" id="consulta">
+            <div class="card">
+                <h2>🔍 Consultar Cartão</h2>
+                <p class="hint">Digite o código do cartão e sua matrícula para consultar</p>
+                <form id="consultaForm">
+                    <div class="form-group">
+                        <label>💳 Código do cartão <span class="required">*</span></label>
+                        <input type="text" id="consultaCodigo" placeholder="Ex: SENAI-2026-123" required />
+                    </div>
+                    <div class="form-group">
+                        <label>🎓 Matrícula (sua senha) <span class="required">*</span></label>
+                        <div class="password-toggle-wrapper">
+                            <input type="password" id="consultaMatricula" placeholder="Digite sua matrícula" required />
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('consultaMatricula', this)">👁️</button>
+                        </div>
+                        <span class="hint-text">Use sua matrícula como senha para acessar</span>
+                    </div>
+                    <button type="submit" class="btn-primary">🔍 Consultar Cartão</button>
+                </form>
+                <div id="consultaResultado" class="resultado"></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: RADAR -->
+        <div class="tab-content hidden" id="radar">
+            <div class="card">
+                <h2>📡 Radar com Mapa</h2>
+                <p class="hint">Digite código + matrícula e simule a proximidade do cartão</p>
+                
+                <div id="radarLoginArea">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:150px;">
+                            <label style="color:rgba(255,255,255,0.6); font-size:12px;">💳 Código do cartão</label>
+                            <input type="text" id="radarCodigo" placeholder="Código do cartão" style="width:100%; padding:8px 12px; border-radius:8px; border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff;" />
+                        </div>
+                        <div style="flex:1; min-width:150px;">
+                            <label style="color:rgba(255,255,255,0.6); font-size:12px;">🎓 Matrícula</label>
+                            <div class="password-toggle-wrapper" style="width:100%;">
+                                <input type="password" id="radarMatricula" placeholder="Sua matrícula" style="width:100%; padding:8px 46px 8px 12px; border-radius:8px; border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff;" />
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('radarMatricula', this)" style="font-size:14px; right:10px;">👁️</button>
+                            </div>
+                        </div>
+                        <button id="radarLoginBtn" class="btn-tertiary" style="padding:8px 20px; border:none; border-radius:8px; background:linear-gradient(135deg,#8b5cf6,#6a3de8); color:#fff; font-weight:600; cursor:pointer; align-self:flex-end;">
+                            🔑 Acessar Radar
+                        </button>
+                    </div>
+                    <div id="radarLoginStatus" style="margin-top:8px; font-size:13px; color:rgba(255,255,255,0.5);"></div>
+                </div>
+
+                <div id="radarContent" style="display:none;">
+                    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                        <button id="ativarLocalizacaoBtn" class="btn-secondary" style="flex:1; min-width:150px; padding:10px 16px; border:none; border-radius:10px; background:linear-gradient(135deg,#4ade80,#22c55e); color:#fff; font-weight:600; cursor:pointer;">
+                            📍 Ativar Localização Real
+                        </button>
+                        <button id="simularLocalizacaoBtn" class="btn-secondary" style="flex:1; min-width:150px; padding:10px 16px; border:none; border-radius:10px; background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#fff; font-weight:600; cursor:pointer;">
+                            🗺️ Simular Localização
+                        </button>
+                    </div>
+                    
+                    <div id="simularLocalizacaoDiv" style="display:none; margin-bottom:15px; padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid rgba(251,191,36,0.3);">
+                        <p style="color:rgba(255,255,255,0.7); font-size:13px; margin-bottom:10px;">
+                            🗺️ <strong>Modo Simulação</strong> - Digite as coordenadas ou clique no mapa:
+                        </p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:120px;">
+                                <label style="color:rgba(255,255,255,0.6); font-size:12px;">Latitude</label>
+                                <input type="text" id="simularLat" value="-23.5015" style="width:100%; padding:8px 12px; border-radius:8px; border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff;" />
+                            </div>
+                            <div style="flex:1; min-width:120px;">
+                                <label style="color:rgba(255,255,255,0.6); font-size:12px;">Longitude</label>
+                                <input type="text" id="simularLng" value="-47.4581" style="width:100%; padding:8px 12px; border-radius:8px; border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff;" />
+                            </div>
+                            <button id="aplicarSimulacaoBtn" class="btn-tertiary" style="padding:8px 20px; border:none; border-radius:8px; background:linear-gradient(135deg,#8b5cf6,#6a3de8); color:#fff; font-weight:600; cursor:pointer; align-self:flex-end;">
+                                ✅ Aplicar
+                            </button>
+                        </div>
+                        <div style="margin-top:8px; color:rgba(255,255,255,0.4); font-size:11px;">
+                            💡 Dica: Clique no mapa para pegar as coordenadas automaticamente!
+                        </div>
+                    </div>
+                    
+                    <div id="mapaContainer"></div>
+                    
+                    <form id="radarForm">
+                        <div class="form-group">
+                            <label for="sinalRssi">Intensidade do Sinal (RSSI)</label>
+                            <input type="range" id="sinalRssi" min="-90" max="-30" value="-60" />
+                            <div class="range-labels">
+                                <span>📶 Fraco (-90)</span>
+                                <span id="sinalValor">-60 dBm</span>
+                                <span>📶 Forte (-30)</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">📡 Atualizar Radar</button>
+                    </form>
+                    <div id="radarResultado" class="resultado"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script-frontend.js"></script>
+</body>
+</html>
