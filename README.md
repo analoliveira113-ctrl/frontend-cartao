@@ -70,5 +70,4 @@ Através da plataforma, o aluno pode:
 
 ## Orientadores / Professores: Adriano Rosa Mazetto e Leandro Gaudio Rosa.
 
-## 
-Instituição: SENAI Gaspar Ricardo Júnior - Sorocaba/SP.
+## Instituição: SENAI Gaspar Ricardo Júnior - Sorocaba/SP.
