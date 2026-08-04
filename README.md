@@ -44,14 +44,14 @@ Através da plataforma, o aluno pode:
    cd backend-cartao
    ```
 
-   ###📱 Como Usar
+   ### 📱 Como Usar
 1. Aba Cadastro: Insira o nome do aluno, a matrícula e o código do cartão RFID.
 
 2. Aba Consulta: Informe a matrícula e o código do cartão para verificar se ele está cadastrado e qual o seu status.
 
 3. Aba Radar com Mapa: Faça login com suas credenciais do cartão e simule a intensidade de sinal (RSSI). O mapa exibirá a posição aproximada do cartão e o raio de busca em metros.
 
-###🔗 Links do Projeto (Entregáveis)
+### 🔗 Links do Projeto (Entregáveis)
 - 🌐 Projeto Hospedado (Front-end): https://analoliveira113-ctrl.github.io/frontend-cartao/
 
 - ⚡ API Backend (Vercel): https://backend-cartao.vercel.app/api/teste
@@ -62,12 +62,13 @@ Através da plataforma, o aluno pode:
 
 - 👤 Contato e Autoria
 
-###Squad: 
+### Squad: 
 - Ana Laura Paulino Oliveira;
 - Eloize Oliveira Müzel;
 - Isabelly Oliveira do Carmo;
 - Maria Eduarda da Silva Dias.
 
-##Orientadores / Professores: Adriano Rosa Mazetto e Leandro Gaudio Rosa.
+## Orientadores / Professores: Adriano Rosa Mazetto e Leandro Gaudio Rosa.
 
-##Instituição: SENAI Gaspar Ricardo Júnior - Sorocaba/SP.
+## 
+Instituição: SENAI Gaspar Ricardo Júnior - Sorocaba/SP.
