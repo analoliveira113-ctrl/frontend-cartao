@@ -1,4 +1,7 @@
-const BACKEND_VERCEL_URL = 'https://backend-cartao.vercel.app/'; 
+// ======================================================
+// CONFIGURAÇÃO DA URL DA API
+// ======================================================
+const BACKEND_VERCEL_URL = 'https://backend-cartao-4sp7fmm0p-analoliveira113-3040s-projects.vercel.app'; 
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000/api'
