@@ -1,7 +1,6 @@
 // ======================================================
 // CONFIGURAÇÃO DA URL DA API
 // ======================================================
-// Substiua pelo link REAL do seu backend na Vercel:
 const BACKEND_VERCEL_URL = 'https://backend-cartao-4sp7fmm0p-analoliveira113-3040s-projects.vercel.app'; 
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -11,24 +10,27 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 console.log('📡 API Conectada em:', API_URL);
 
 // ======================================================
-// FUNÇÃO DE FETCH
+// FUNÇÃO DE FETCH (Corrigida para aceitar dynamic methods e headers)
 // ======================================================
-async function fazerRequisicao(endpoint, dados = null) {
+async function fazerRequisicao(endpoint, dados = null, metodo = 'POST') {
     const url = `${API_URL}${endpoint}`;
     console.log('📡 Requisição:', url, dados);
     
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        
+        const opcoes = {
+            method: metodo,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (dados && metodo !== 'GET') {
+            opcoes.body = JSON.stringify(dados);
+        }
+
+        const response = await fetch(url, opcoes);
         const data = await response.json();
         console.log('✅ Resposta:', data);
         
         if (!response.ok) {
-            throw new Error(data.erro || `HTTP ${response.status}`);
+            throw new Error(data.mensagem || data.erro || `HTTP ${response.status}`);
         }
         
         return data;
@@ -46,7 +48,7 @@ async function testarConexao() {
         console.log('✅ CONEXÃO OK:', data);
         return true;
     } catch (error) {
-        console.error('❌ ERRO:', error);
+        console.error('❌ ERRO AO CONECTAR:', error);
         return false;
     }
 }
@@ -83,7 +85,7 @@ function togglePasswordVisibility(inputId, button) {
 }
 
 // ======================================================
-// TABS
+// TABS (Troca de abas corrigida)
 // ======================================================
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -92,7 +94,10 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.add('hidden');
         });
-        document.getElementById(tab.dataset.tab).classList.remove('hidden');
+        const activeContent = document.getElementById(tab.dataset.tab);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
         if (tab.dataset.tab === 'radar') {
             setTimeout(initMap, 300);
         }
@@ -100,7 +105,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ======================================================
-// CADASTRO
+// CADASTRO (Corrigido conforme campos do Supabase)
 // ======================================================
 document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -125,14 +130,14 @@ document.getElementById('cadastroForm').addEventListener('submit', async (e) => 
         });
 
         if (data.sucesso) {
+            const cad = Array.isArray(data.data) ? data.data[0] : data.data;
             resultado.innerHTML = `
                 <div class="success">✅ ${data.mensagem}</div>
                 <div class="highlight">
-                    <div class="detail"><strong>👤 Aluno:</strong> ${data.dadosCadastrados.nomeAluno}</div>
-                    <div class="detail"><strong>🎓 Matrícula:</strong> ${data.dadosCadastrados.matricula}</div>
-                    <div class="detail"><strong>💳 Código:</strong> ${data.dadosCadastrados.idCartao}</div>
-                    <div class="detail"><strong>📍 Local:</strong> ${data.dadosCadastrados.localPerdido}</div>
-                    <div class="detail"><strong>📌 Status:</strong> <span class="status-perdido">🚨 PERDIDO</span></div>
+                    <div class="detail"><strong>👤 Aluno:</strong> ${cad?.nome_aluno || nome}</div>
+                    <div class="detail"><strong>🎓 Matrícula:</strong> ${cad?.matricula || matricula}</div>
+                    <div class="detail"><strong>💳 Código:</strong> ${cad?.codigo_cartao || codigoCartao}</div>
+                    <div class="detail"><strong>📌 Status:</strong> <span class="status-perdido">🚨 ${cad?.status || 'Ativo'}</span></div>
                 </div>
                 <div style="margin-top:12px; color:#60a5fa; font-size:14px;">
                     💡 Agora vá na aba <strong>"Consultar"</strong> com seu código + matrícula!
@@ -141,7 +146,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async (e) => 
             resultado.classList.add('visible');
             document.getElementById('cadastroForm').reset();
         } else {
-            showResult(resultado, 'error', data.erro || '❌ Erro ao cadastrar.');
+            showResult(resultado, 'error', data.mensagem || '❌ Erro ao cadastrar.');
         }
     } catch (error) {
         showResult(resultado, 'error', `❌ ${error.message}`);
@@ -150,7 +155,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async (e) => 
 });
 
 // ======================================================
-// CONSULTA
+// CONSULTA (Corrigido para usar a estrutura de retorno do backend)
 // ======================================================
 document.getElementById('consultaForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -172,27 +177,21 @@ document.getElementById('consultaForm').addEventListener('submit', async (e) => 
             matricula
         });
 
-        if (data.sucesso) {
+        if (data.sucesso && data.cartao) {
+            const c = data.cartao;
             resultado.innerHTML = `
                 <div style="margin-bottom:10px; color:#4ade80; font-weight:600;">✅ Cartão Encontrado!</div>
-                <div class="detail"><strong>👤 Aluno:</strong> ${data.aluno}</div>
-                <div class="detail"><strong>🎓 Matrícula:</strong> ${data.matricula}</div>
-                <div class="detail"><strong>💳 Código:</strong> ${data.cartaoCodigo}</div>
-                <div class="detail"><strong>📌 Status:</strong> <span class="status-perdido">🚨 ${data.statusAtual}</span></div>
-                <div class="highlight">
-                    <strong>📍 Última localização:</strong><br>
-                    ${data.localizacao?.ondeFoiVisto || 'Não informado'}<br>
-                    <small style="color:rgba(255,255,255,0.4);">
-                        🕐 ${data.localizacao?.registradoAs || 'Não registrado'}
-                    </small>
-                </div>
+                <div class="detail"><strong>👤 Aluno:</strong> ${c.nome_aluno}</div>
+                <div class="detail"><strong>🎓 Matrícula:</strong> ${c.matricula}</div>
+                <div class="detail"><strong>💳 Código:</strong> ${c.codigo_cartao}</div>
+                <div class="detail"><strong>📌 Status:</strong> <span class="status-perdido">🚨 ${c.status || 'Ativo'}</span></div>
                 <div style="margin-top:12px; color:#60a5fa; font-size:14px;">
-                    💡 Vá na aba <strong>"Radar"</strong> e use o mesmo código + matrícula!
+                    💡 Vá na aba <strong>"Radar com Mapa"</strong> para localizar no mapa!
                 </div>
             `;
             resultado.classList.add('visible');
         } else {
-            showResult(resultado, 'error', data.erro || '❌ Cartão não encontrado.');
+            showResult(resultado, 'error', data.mensagem || '❌ Cartão não encontrado.');
         }
     } catch (error) {
         showResult(resultado, 'error', `❌ ${error.message}`);
@@ -223,25 +222,16 @@ document.getElementById('radarLoginBtn').addEventListener('click', async () => {
             matricula
         });
 
-        if (data.sucesso) {
+        if (data.sucesso && data.cartao) {
             radarAutenticado = true;
-            radarDados = data;
+            radarDados = data.cartao;
             status.innerHTML = '✅ Autenticado com sucesso!';
             status.style.color = '#4ade80';
             document.getElementById('radarLoginArea').style.display = 'none';
             document.getElementById('radarContent').style.display = 'block';
-            if (data.localizacao) {
-                setTimeout(() => {
-                    updateCardMarker(
-                        data.localizacao.latitude, 
-                        data.localizacao.longitude, 
-                        data.localizacao.ondeFoiVisto, 
-                        0
-                    );
-                }, 500);
-            }
+            setTimeout(initMap, 300);
         } else {
-            status.innerHTML = '❌ ' + (data.erro || 'Cartão não encontrado.');
+            status.innerHTML = '❌ ' + (data.mensagem || 'Cartão não encontrado.');
             status.style.color = '#f87171';
         }
     } catch (error) {
@@ -268,20 +258,18 @@ document.getElementById('radarForm').addEventListener('submit', async (e) => {
 
     try {
         const data = await fazerRequisicao('/meu-cartao/simular-radar', {
-            codigoCartao: radarDados.cartaoCodigo,
+            codigoCartao: radarDados.codigo_cartao,
             matricula: radarDados.matricula,
             sinalRssi
         });
 
         if (data.sucesso) {
-            if (data.localizacao) {
-                updateCardMarker(
-                    data.localizacao.latitude,
-                    data.localizacao.longitude,
-                    data.localizacao.ondeFoiVisto,
-                    data.raio || 0
-                );
-            }
+            updateCardMarker(
+                userLocation.lat + 0.001,
+                userLocation.lng + 0.001,
+                "SENAI - Bloco A",
+                data.distanciaEstimadaMetros || 10
+            );
 
             let highlightClass = 'highlight';
             let icon = '📡';
@@ -301,32 +289,19 @@ document.getElementById('radarForm').addEventListener('submit', async (e) => {
                 cor = '#60a5fa';
             }
 
-            let distanciaTexto = '';
-            if (userMarker && cardMarker) {
-                const userPos = userMarker.getLatLng();
-                const cardPos = cardMarker.getLatLng();
-                const dist = userPos.distanceTo(cardPos);
-                distanciaTexto = dist > 1000 ? 
-                    `📏 ${(dist/1000).toFixed(2)} km` : 
-                    `📏 ${Math.round(dist)} metros`;
-            }
-
             resultado.innerHTML = `
                 <div style="margin-bottom:10px; color:#60a5fa; font-weight:600;">📡 Radar Atualizado</div>
-                <div class="detail"><strong>👤 Aluno:</strong> ${data.aluno}</div>
-                <div class="detail"><strong>📍 Local:</strong> ${data.localizacao?.ondeFoiVisto || 'Não informado'}</div>
-                <div class="detail"><strong>📶 Sinal:</strong> ${data.sinalMedidoDb} dBm</div>
-                ${distanciaTexto ? `<div class="detail"><strong>${distanciaTexto}</strong></div>` : ''}
+                <div class="detail"><strong>👤 Aluno:</strong> ${radarDados.nome_aluno}</div>
+                <div class="detail"><strong>📶 Sinal:</strong> ${data.sinalRssi} dBm</div>
                 <div class="${highlightClass}" style="border-left-color:${cor};">
                     <div style="font-size:18px; font-weight:700; margin-bottom:6px; color:${cor};">
-                        ${icon} ${data.statusRadar}
+                        ${icon} ${data.mensagem}
                     </div>
-                    <div style="color:rgba(255,255,255,0.9);">${data.orientacao}</div>
                 </div>
             `;
             resultado.classList.add('visible');
         } else {
-            showResult(resultado, 'error', data.erro || '❌ Erro ao atualizar radar.');
+            showResult(resultado, 'error', data.mensagem || '❌ Erro ao atualizar radar.');
         }
     } catch (error) {
         showResult(resultado, 'error', `❌ ${error.message}`);
@@ -340,6 +315,9 @@ document.getElementById('radarForm').addEventListener('submit', async (e) => {
 function initMap() {
     if (map) { map.invalidateSize(); return; }
     
+    const mapaElement = document.getElementById('mapaContainer');
+    if (!mapaElement) return;
+
     map = L.map('mapaContainer').setView([-23.5015, -47.4581], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap',
@@ -399,7 +377,6 @@ function addLegend() {
             <div class="legend-item"><span class="legend-dot user"></span><span>🧑 Você</span></div>
             <div class="legend-item"><span class="legend-dot card"></span><span>🎯 Cartão</span></div>
             <div class="legend-item"><span class="legend-line"></span><span>📏 Distância</span></div>
-            ${isUsingSimulatedLocation ? '<div style="margin-top:6px;font-size:10px;color:#fbbf24;">🔶 Modo Simulação</div>' : '<div style="margin-top:6px;font-size:10px;color:#4ade80;">✅ Localização Real</div>'}
         `;
         return div;
     };
@@ -410,7 +387,7 @@ function updateUserMarker(lat, lng) {
     if (userMarker) { map.removeLayer(userMarker); }
     const icon = L.divIcon({
         className: 'custom-div-icon',
-        html: `<div style="background:#4ade80;width:44px;height:44px;border-radius:50%;border:3px solid white;box-shadow:0 0 30px rgba(74,222,128,0.6);display:flex;align-items:center;justify-content:center;font-size:24px;animation:pulse-green 1.5s ease-in-out infinite;">🧑</div>`,
+        html: `<div style="background:#4ade80;width:44px;height:44px;border-radius:50%;border:3px solid white;box-shadow:0 0 30px rgba(74,222,128,0.6);display:flex;align-items:center;justify-content:center;font-size:24px;">🧑</div>`,
         iconSize: [54, 54],
         iconAnchor: [27, 27]
     });
@@ -424,7 +401,7 @@ function updateCardMarker(lat, lng, local, raio = 0) {
     
     const icon = L.divIcon({
         className: 'custom-div-icon',
-        html: `<div style="background:#ef4444;width:48px;height:48px;border-radius:50%;border:3px solid white;box-shadow:0 0 30px rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;font-size:26px;animation:pulse-red 1.5s ease-in-out infinite;">🎯</div>`,
+        html: `<div style="background:#ef4444;width:48px;height:48px;border-radius:50%;border:3px solid white;box-shadow:0 0 30px rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;font-size:26px;">🎯</div>`,
         iconSize: [58, 58],
         iconAnchor: [29, 29]
     });
@@ -434,8 +411,6 @@ function updateCardMarker(lat, lng, local, raio = 0) {
             <div style="font-size:32px;">🎯</div>
             <div style="font-weight:bold;color:#ef4444;">CARTÃO PERDIDO!</div>
             <div style="font-size:14px;color:#aaa;">📍 ${local}</div>
-            <div style="font-size:12px;color:#888;">${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-            ${raio > 0 ? `<div style="font-size:12px;color:#fbbf24;">📶 Raio: ${raio}m</div>` : ''}
         </div>
     `);
     
@@ -445,8 +420,7 @@ function updateCardMarker(lat, lng, local, raio = 0) {
             color: '#ef4444', 
             fillColor: '#ef4444', 
             fillOpacity: 0.15, 
-            weight: 2, 
-            dashArray: '5,5' 
+            weight: 2 
         }).addTo(map);
     }
     updateDistanceLine();
@@ -472,7 +446,7 @@ function updateDistanceLine() {
     
     const mid = [(userPos.lat + cardPos.lat)/2, (userPos.lng + cardPos.lng)/2];
     const icon = L.divIcon({ 
-        html: `<div style="background:rgba(139,92,246,0.9);color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:bold;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.3);white-space:nowrap;">📏 ${text}</div>`, 
+        html: `<div style="background:rgba(139,92,246,0.9);color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:bold;border:2px solid #fff;">📏 ${text}</div>`, 
         iconSize: [0,0] 
     });
     distancePopup = L.marker(mid, { icon }).addTo(map);
@@ -484,7 +458,7 @@ function centralizarMapa() {
 }
 
 // ======================================================
-// NOTIFICAÇÕES
+// NOTIFICAÇÕES & UTILITÁRIOS
 // ======================================================
 function showNotification(message, type = 'info') {
     const colors = { success: '#4ade80', error: '#f87171', info: '#60a5fa', warning: '#fbbf24' };
@@ -492,20 +466,13 @@ function showNotification(message, type = 'info') {
     div.style.cssText = `
         position:fixed;top:20px;right:20px;background:rgba(0,0,0,0.9);color:#fff;
         padding:12px 20px;border-radius:12px;border-left:4px solid ${colors[type] || '#8b5cf6'};
-        box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:9999;max-width:400px;
-        animation:slideInRight 0.5s ease;font-size:14px;backdrop-filter:blur(10px);
+        box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:9999;max-width:400px;font-size:14px;
     `;
     div.textContent = message;
     document.body.appendChild(div);
-    setTimeout(() => { 
-        div.style.animation = 'slideOutRight 0.5s ease'; 
-        setTimeout(() => div.remove(), 500); 
-    }, 5000);
+    setTimeout(() => div.remove(), 4000);
 }
 
-// ======================================================
-// UTILITÁRIOS
-// ======================================================
 function showResult(element, type, message) {
     element.innerHTML = `<div class="${type}">${message}</div>`;
     element.classList.add('visible');
@@ -516,57 +483,21 @@ function showLoading(element) {
     element.classList.add('visible');
 }
 
-// ======================================================
-// SINAL - ATUALIZAR VALOR
-// ======================================================
 document.getElementById('sinalRssi').addEventListener('input', function() {
     document.getElementById('sinalValor').textContent = `${this.value} dBm`;
 });
 
 // ======================================================
-// INICIALIZAR
+// INICIALIZAR (Corrigido para não travar a UI caso falhe a conexão)
 // ======================================================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Página carregada!');
     console.log('📡 URL da API:', API_URL);
     
     const conectado = await testarConexao();
-    if (!conectado) {
-        document.querySelector('.container').innerHTML += `
-            <div style="background:rgba(239,68,68,0.2);border:2px solid #ef4444;border-radius:12px;padding:20px;margin-top:20px;text-align:center;">
-                <div style="font-size:48px;">🔌</div>
-                <h3 style="color:#f87171;">Servidor não encontrado!</h3>
-                <p style="color:rgba(255,255,255,0.7);">
-                    Execute <code style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:4px;">node script.js</code> no terminal
-                </p>
-            </div>
-        `;
-        return;
-    }
-    
-    console.log('✅ Conexão estabelecida!');
-    
-    if (!document.getElementById('radar').classList.contains('hidden')) {
-        setTimeout(initMap, 500);
+    if (conectado) {
+        showNotification('✅ Conectado ao servidor Vercel!', 'success');
+    } else {
+        showNotification('⚠️ Não foi possível conectar à API.', 'warning');
     }
 });
-
-// ======================================================
-// ANIMAÇÕES CSS
-// ======================================================
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-    @keyframes pulse-green {
-        0% { box-shadow: 0 0 20px rgba(74,222,128,0.3); transform: scale(1); }
-        50% { box-shadow: 0 0 50px rgba(74,222,128,0.7); transform: scale(1.1); }
-        100% { box-shadow: 0 0 20px rgba(74,222,128,0.3); transform: scale(1); }
-    }
-    @keyframes pulse-red {
-        0% { box-shadow: 0 0 20px rgba(239,68,68,0.3); transform: scale(1); }
-        50% { box-shadow: 0 0 50px rgba(239,68,68,0.7); transform: scale(1.1); }
-        100% { box-shadow: 0 0 20px rgba(239,68,68,0.3); transform: scale(1); }
-    }
-`;
-document.head.appendChild(style);
